@@ -112,6 +112,13 @@ db_path = /etc/nipap/local_auth.db     ; path to SQLite database used
 #uri = ldaps://ldap.example.com            ; LDAP server URI
 #tls = False                            ; initiate TLS, use ldap://
 #
+## Certificate validation
+# Specify a CA certificate to validate LDAP server against (both LDAPS/StartTLS)
+#ca = /etc/nipap/certs/ca.cert.pem
+# Specify client certificate and key to present to server for client auth
+#certificate = /etc/nipap/certs/nipap.cert.pem
+#key = /etc/nipap/certs/nipap.key.pem
+#
 # LDAP style
 #binddn_fmt = uid={},ou=Users,dc=example,dc=com
 #search = uid={}                        ; LDAP search filter

@@ -287,6 +287,9 @@ class LdapAuth(BaseAuth):
     _ldap_conn = None
     _ldap_search_conn = None
     _authenticated = None
+    _ldap_certificate = None
+    _ldap_key = None
+    _ldap_ca = None
 
     def __init__(self, name, username, password, authoritative_source, auth_options=None):
         """ Constructor.
@@ -344,6 +347,30 @@ class LdapAuth(BaseAuth):
             self._ldap_search_binddn = self._cfg.get(base_auth_backend, 'search_binddn')
             self._ldap_search_password = self._cfg.get(base_auth_backend, 'search_password')
             self._ldap_search_conn = ldap.initialize(self._ldap_uri)
+
+        # Certificate authority to validate server certificate against
+        if self._cfg.has_option(base_auth_backend, 'ca'):
+            self._logger.debug('Setting CA file for LDAP server certificate validation')
+            self._ldap_ca = self._cfg.get(base_auth_backend, 'ca')
+            self._ldap_conn.set_option(ldap.OPT_X_TLS_CACERTFILE,self._ldap_ca)
+            self._ldap_conn.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
+            if self._ldap_search_conn is not None:
+                self._ldap_search_conn.set_option(ldap.OPT_X_TLS_CACERTFILE,self._ldap_ca)
+                self._ldap_search_conn.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
+
+        # Client certificate to send for mutual authentication
+        if self._cfg.has_option(base_auth_backend, 'certificate'):
+            self._logger.debug('Setting certificate/key for LDAP client validation')
+            self._ldap_certificate = self._cfg.get(base_auth_backend, 'certificate')
+            self._ldap_key = self._cfg.get(base_auth_backend, 'key')
+
+            self._ldap_conn.set_option(ldap.OPT_X_TLS_CERTFILE,self._ldap_certificate)
+            self._ldap_conn.set_option(ldap.OPT_X_TLS_KEYFILE,self._ldap_key)
+            self._ldap_conn.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
+            if self._ldap_search_conn is not None:
+                self._ldap_search_conn.set_option(ldap.OPT_X_TLS_CERTFILE,self._ldap_certificate)
+                self._ldap_search_conn.set_option(ldap.OPT_X_TLS_KEYFILE,self._ldap_key)
+                self._ldap_search_conn.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
 
         if self._ldap_tls:
             try:
