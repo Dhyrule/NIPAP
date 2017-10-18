@@ -115,6 +115,7 @@ db_path = /etc/nipap/local_auth.db     ; path to SQLite database used
 # LDAP style
 #binddn_fmt = uid={},ou=Users,dc=example,dc=com
 #search = uid={}                        ; LDAP search filter
+#user_search_attribute = uid
 #
 # Active Directory (UPN) style
 #binddn_fmt = {}@example.com

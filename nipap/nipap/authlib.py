@@ -287,6 +287,7 @@ class LdapAuth(BaseAuth):
     _ldap_conn = None
     _ldap_search_conn = None
     _authenticated = None
+    _user_search_attribute = 'cn'
 
     def __init__(self, name, username, password, authoritative_source, auth_options=None):
         """ Constructor.
@@ -345,6 +346,10 @@ class LdapAuth(BaseAuth):
             self._ldap_search_password = self._cfg.get(base_auth_backend, 'search_password')
             self._ldap_search_conn = ldap.initialize(self._ldap_uri)
 
+        # Which name attribute to search for on user
+        if self._cfg.has_option(base_auth_backend, 'user_search_attribute'):
+            self._user_search_attribute = self._cfg.get(base_auth_backend, 'user_search_attribute')
+
         if self._ldap_tls:
             try:
                 self._ldap_conn.start_tls_s()
@@ -392,9 +397,12 @@ class LdapAuth(BaseAuth):
             else:
                 search_conn = self._ldap_conn
 
-            res = search_conn.search_s(self._ldap_basedn, ldap.SCOPE_SUBTREE, self._ldap_search.format(ldap.dn.escape_dn_chars(self.username)), ['cn','memberOf'])
-            if res[0][1]['cn'][0] is not None:
-                self.full_name = res[0][1]['cn'][0].decode('utf-8')
+            res = search_conn.search_s(self._ldap_basedn,
+                                       ldap.SCOPE_SUBTREE,
+                                       self._ldap_search.format(ldap.dn.escape_dn_chars(self.username)),
+                                       [self._user_search_attribute,'memberOf'])
+            if res[0][1][self._user_search_attribute][0] is not None:
+                self.full_name = res[0][1][self._user_search_attribute][0].decode('utf-8')
             # check for ro_group membership if ro_group is configured
             if self._ldap_ro_group:
                 if self._ldap_ro_group in res[0][1].get('memberOf', []):
