@@ -326,9 +326,11 @@ class LdapAuth(BaseAuth):
         self._ldap_ro_group = None
         self._ldap_rw_group = None
         if self._cfg.has_option(base_auth_backend, 'ro_group'):
-            self._ldap_ro_group = self._cfg.get(base_auth_backend, 'ro_group')
+            self._logger.debug(self._cfg.get(base_auth_backend, 'ro_group').split())
+            self._ldap_ro_group = self._cfg.get(base_auth_backend, 'ro_group').split()
         if self._cfg.has_option(base_auth_backend, 'rw_group'):
-            self._ldap_rw_group = self._cfg.get(base_auth_backend, 'rw_group')
+            self._logger.debug(self._cfg.get(base_auth_backend, 'rw_group').split())
+            self._ldap_rw_group = self._cfg.get(base_auth_backend, 'rw_group').split()
 
         self._logger.debug('Creating LdapAuth instance')
 
@@ -395,19 +397,24 @@ class LdapAuth(BaseAuth):
             res = search_conn.search_s(self._ldap_basedn, ldap.SCOPE_SUBTREE, self._ldap_search.format(ldap.dn.escape_dn_chars(self.username)), ['cn','memberOf'])
             if res[0][1]['cn'][0] is not None:
                 self.full_name = res[0][1]['cn'][0].decode('utf-8')
+
+            rw_member_of = None
+            ro_member_of = None
             # check for ro_group membership if ro_group is configured
             if self._ldap_ro_group:
-                if self._ldap_ro_group in res[0][1].get('memberOf', []):
+                ro_member_of = res[0][1].get('memberOf', [])
+                if set(self._ldap_ro_group).intersection(ro_member_of):
                     self.readonly = True
             # check for rw_group membership if rw_group is configured
             if self._ldap_rw_group:
-                if self._ldap_rw_group in res[0][1].get('memberOf', []):
+                rw_member_of = res[0][1].get('memberOf', [])
+                if set(self._ldap_rw_group).intersection(rw_member_of):
                     self.readonly = False
                 else:
                     # if ro_group is configured, and the user is a member of
                     # neither the ro_group nor the rw_group, fail authentication.
                     if self._ldap_ro_group:
-                        if self._ldap_ro_group not in res[0][1].get('memberOf', []):
+                        if set(self._ldap_ro_group).intersection(ro_member_of):
                             self._authenticated = False
                             return self._authenticated
                     else:
